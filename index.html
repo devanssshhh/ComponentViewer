@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON to Trie Tree View</title>
+    <style>
+        ul {
+            list-style-type: none;
+            padding-left: 20px;
+        }
+        li {
+            margin-left: 10px;
+        }
+        li strong {
+            color: blue;
+        }
+    </style>
+</head>
+<body>
+    <h1>JSON to Trie Tree View</h1>
+
+    <textarea id="jsonInput" rows="10" cols="50" placeholder="Enter JSON here"></textarea><br><br>
+    <button onclick="generateTrie()">Submit</button>
+
+    <h2>Trie Tree View:</h2>
+    <div id="treeView"></div>
+
+    <script>
+        function generateTrie() {
+            const inputText = document.getElementById('jsonInput').value;
+            try {
+                // Parse the JSON input
+                const jsonObj = JSON.parse(inputText);
+                const entries = jsonObj.Table;
+
+                // Initialize the root of the Trie
+                const trie = {};
+
+                // Populate the Trie structure
+                entries.forEach(entry => {
+                    let current = trie;
+
+                    // Traverse through the JSON entry and create the Trie
+                    const path = [
+                        entry.ApplicationName,
+                        entry.AppComponentName,
+                        entry.ServerName,
+                        entry.DBInstance,
+                        entry.Database
+                    ];
+
+                    path.forEach((value, index) => {
+                        if (!current[value]) {
+                            current[value] = index === path.length - 1 ? "Leaf" : {}; // Mark leaf for the final value (Database)
+                        }
+                        current = current[value];
+                    });
+                });
+
+                // Create the tree view from the Trie structure
+                const treeHTML = createTrieTree(trie);
+                document.getElementById('treeView').innerHTML = treeHTML;
+            } catch (e) {
+                document.getElementById('treeView').innerHTML = "<p style='color:red;'>Invalid JSON input</p>";
+            }
+        }
+
+        // Function to create the tree structure recursively
+        function createTrieTree(node) {
+            let html = "<ul>";
+
+            for (const key in node) {
+                if (node.hasOwnProperty(key)) {
+                    if (node[key] === "Leaf") {
+                        html += `<li><strong>${key} (Leaf)</strong></li>`; // Mark leaf nodes
+                    } else {
+                        html += `<li><strong>${key}</strong>${createTrieTree(node[key])}</li>`; // Recursively create tree for non-leaf nodes
+                    }
+                }
+            }
+
+            html += "</ul>";
+            return html;
+        }
+    </script>
+</body>
+</html>
