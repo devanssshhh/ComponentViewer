@@ -15,7 +15,17 @@
         li strong {
             color: blue;
         }
+        .link {
+            fill: none;
+            stroke: #999;
+            stroke-width: 2px;
+        }
+        .node rect {
+            fill: white;
+            stroke: black;
+        }
     </style>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
 </head>
 <body>
     <h1>JSON to Trie Tree View</h1>
@@ -59,30 +69,93 @@
                 });
 
                 // Create the tree view from the Trie structure
-                const treeHTML = createTrieTree(trie);
-                document.getElementById('treeView').innerHTML = treeHTML;
+                document.getElementById('treeView').innerHTML = "";
+                createTrieTree(trie);
             } catch (e) {
-                document.getElementById('treeView').innerHTML = "<p style='color:red;'>Invalid JSON input</p>";
+                document.getElementById('treeView').innerHTML = e +  "<p style='color:red;'>Invalid JSON input</p>";
             }
         }
 
         // Function to create the tree structure recursively
-        function createTrieTree(node) {
-            let html = "<ul>";
-
-            for (const key in node) {
-                if (node.hasOwnProperty(key)) {
-                    if (node[key] === "Leaf") {
-                        html += `<li><strong>${key} (Leaf)</strong></li>`; // Mark leaf nodes
-                    } else {
-                        html += `<li><strong>${key}</strong>${createTrieTree(node[key])}</li>`; // Recursively create tree for non-leaf nodes
+        function createTrieTree(trie) {
+            const width = 1000, height = 600;
+            const treeLayout = d3.tree().size([height, width - 200]);
+            
+            const svg = d3.select("#treeView").html("").append("svg")
+                .attr("width", width)
+                .attr("height", height)
+                .call(d3.zoom().scaleExtent([0.5, 2]).on("zoom", (event) => {
+                    g.attr("transform", event.transform);
+                }))
+                .append("g");
+            
+            function buildHierarchy(obj, parent = "root") {
+                return Object.keys(obj).map(key => {
+                    const node = { name: key, children: [] };
+                    if (typeof obj[key] === "object") {
+                        node.children = buildHierarchy(obj[key], key);
                     }
+                    return node;
+                });
+            }
+            
+            const root = d3.hierarchy({ name: "Root", children: buildHierarchy(trie) });
+            treeLayout(root);
+            
+            const linkGen = d3.linkHorizontal()
+                .x(d => d.y)
+                .y(d => d.x);
+            
+            const g = svg.append("g").attr("transform", "translate(100, 0)");
+            
+            g.selectAll(".link")
+                .data(root.links())
+                .enter().append("path")
+                .attr("class", "link")
+                .attr("d", linkGen)
+                .style("fill", "none")
+                .style("stroke", "#999")
+                .style("stroke-width", "2px");
+            
+            const node = g.selectAll(".node")
+                .data(root.descendants())
+                .enter().append("g")
+                .attr("class", "node")
+                .attr("transform", d => `translate(${d.y},${d.x})`)
+                .on("mouseover", function (event, d) {
+                    d3.select(this).select("rect").style("fill", "lightblue");
+                    highlightPath(d);
+                })
+                .on("mouseout", function (event, d) {
+                    d3.selectAll("rect").style("fill", "white");
+                    d3.selectAll(".link").style("stroke", "#999");
+                });
+            
+            node.append("rect")
+                .attr("width", 100)
+                .attr("height", 40)
+                .attr("x", -50)
+                .attr("y", -20)
+                .style("fill", "white")
+                .style("stroke", "black");
+            
+            node.append("text")
+                .attr("dy", ".35em")
+                .style("text-anchor", "middle")
+                .text(d => d.data.name);
+            
+            function highlightPath(d) {
+                let current = d;
+                while (current) {
+                    d3.selectAll(".node").filter(n => n === current)
+                        .select("rect").style("fill", "orange");
+                    d3.selectAll(".link").filter(l => l.target === current)
+                        .style("stroke", "orange");
+                    current = current.parent;
                 }
             }
-
-            html += "</ul>";
-            return html;
         }
+
     </script>
 </body>
 </html>
