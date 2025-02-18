@@ -76,11 +76,13 @@
             }
         }
 
+
+        // Function to create the tree structure recursively
         // Function to create the tree structure recursively
         function createTrieTree(trie) {
             const width = 1000, height = 600;
             const treeLayout = d3.tree().size([height, width - 200]);
-            
+
             const svg = d3.select("#treeView").html("").append("svg")
                 .attr("width", width)
                 .attr("height", height)
@@ -88,26 +90,28 @@
                     g.attr("transform", event.transform);
                 }))
                 .append("g");
-            
-            function buildHierarchy(obj, parent = "root") {
+
+            // Function to build the hierarchy from the trie without adding a root node
+            function buildHierarchy(obj) {
                 return Object.keys(obj).map(key => {
                     const node = { name: key, children: [] };
                     if (typeof obj[key] === "object") {
-                        node.children = buildHierarchy(obj[key], key);
+                        node.children = buildHierarchy(obj[key]);
                     }
                     return node;
                 });
             }
-            
-            const root = d3.hierarchy({ name: "Root", children: buildHierarchy(trie) });
+
+            // Create the hierarchy directly from the trie, no need for "Root"
+            const root = d3.hierarchy(buildHierarchy(trie)[0]);
             treeLayout(root);
-            
+
             const linkGen = d3.linkHorizontal()
                 .x(d => d.y)
                 .y(d => d.x);
-            
+
             const g = svg.append("g").attr("transform", "translate(100, 0)");
-            
+
             g.selectAll(".link")
                 .data(root.links())
                 .enter().append("path")
@@ -116,7 +120,7 @@
                 .style("fill", "none")
                 .style("stroke", "#999")
                 .style("stroke-width", "2px");
-            
+
             const node = g.selectAll(".node")
                 .data(root.descendants())
                 .enter().append("g")
@@ -130,7 +134,7 @@
                     d3.selectAll("rect").style("fill", "white");
                     d3.selectAll(".link").style("stroke", "#999");
                 });
-            
+
             node.append("rect")
                 .attr("width", 100)
                 .attr("height", 40)
@@ -138,12 +142,12 @@
                 .attr("y", -20)
                 .style("fill", "white")
                 .style("stroke", "black");
-            
+
             node.append("text")
                 .attr("dy", ".35em")
                 .style("text-anchor", "middle")
                 .text(d => d.data.name);
-            
+
             function highlightPath(d) {
                 let current = d;
                 while (current) {
@@ -155,6 +159,7 @@
                 }
             }
         }
+
 
     </script>
 </body>
